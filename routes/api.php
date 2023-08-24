@@ -13,6 +13,7 @@ Route::post("products", [ProductController::class, 'store']);
 Route::get("products/{id}", [ProductController::class, 'show']);
 Route::put("products/{id}/edit", [ProductController::class, 'update']);
 Route::delete("products/{id}/delete", [ProductController::class, 'destroy']);
+Route::get("products/search/{name}", [ProductController::class, 'searchByName']);
 
 
 

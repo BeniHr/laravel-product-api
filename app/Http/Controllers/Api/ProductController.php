@@ -80,34 +80,50 @@ class ProductController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        $product = Product::find($id);
+{
+    $product = Product::find($id);
 
-        if (!$product) {
-            return response()->json(['status' => 404, 'message' => 'Product not found'], 404);
-        }
+    if (!$product) {
+        return response()->json(['status' => 404, 'message' => 'Product not found'], 404);
+    }
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:20',
-            'description' => 'required|string|max:100',
-            'price' => 'required|max:10',
-            'image' => 'required|url|max:255',
-            'properties' => 'required|json|max:200',
-        ]);
+    $validator = Validator::make($request->all(), [
+        'name' => 'string|max:20',
+        'description' => 'string|max:100',
+        'price' => 'numeric|max:999999.99', // Adjust the validation as needed
+        'image' => 'url|max:255',
+        'properties' => 'json|max:200',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
 
-        $product->update([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'image' => $request->image,
-            'properties' => $request->properties,
-        ]);
+    $updateData = [];
 
-        return response()->json(['status' => 200, 'message' => 'Product updated successfully'], 200);
+    if ($request->has('name')) {
+        $updateData['name'] = $request->name;
+    }
+
+    if ($request->has('description')) {
+        $updateData['description'] = $request->description;
+    }
+
+    if ($request->has('price')) {
+        $updateData['price'] = $request->price;
+    }
+
+    if ($request->has('image')) {
+        $updateData['image'] = $request->image;
+    }
+
+    if ($request->has('properties')) {
+        $updateData['properties'] = $request->properties;
+    }
+
+    $product->update($updateData);
+
+    return response()->json(['status' => 200, 'message' => 'Product updated successfully'], 200);
     }
 
     public function destroy($id)
@@ -122,4 +138,32 @@ class ProductController extends Controller
 
         return response()->json(['status' => 200, 'message' => 'Product deleted successfully'], 200);
     }
+
+    public function searchByName($name)
+{
+    if (empty($name)) {
+        return response()->json(['status' => 400, 'message' => 'Search query is required'], 400);
+    }
+
+    $products = Product::where('name', 'LIKE', '%' . $name . '%')->get();
+
+    if ($products->count() > 0) {
+        $products->transform(function ($product) {
+            $product->properties = json_decode($product->properties);
+            return $product;
+        });
+
+        $data = [
+            'status' => 200,
+            'products' => $products
+        ];
+        return response()->json($data, 200);
+    } else {
+        $data = [
+            'status' => 404,
+            'response' => "No products found"
+        ];
+        return response()->json($data, 404);
+    }
+}
 }
